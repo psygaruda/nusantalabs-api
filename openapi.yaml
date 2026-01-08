@@ -1,0 +1,134 @@
+openapi: 3.0.3
+info:
+  title: NusantaLabs Public Data API
+  description: >
+    API for accessing standardized economic, environmental, and social data 
+    for Indonesia and Southeast Asia. Produced by NusantaLabs.
+  version: 1.0.0
+  contact:
+    name: NusantaLabs Developer Support
+    url: https://nusantalabs.org/developers
+    email: api@nusantalabs.org
+
+servers:
+  - url: https://api.nusantalabs.org/v1
+    description: Production Server
+  - url: https://staging-api.nusantalabs.org/v1
+    description: Staging/Test Server
+
+paths:
+  /economics/fiscal-metrics:
+    get:
+      summary: Retrieve Fiscal Health Indicators
+      description: >
+        Fetches specific economic metrics (e.g., Debt-to-GDP, Budget Deficit) 
+        filtered by region, year, or specific indicator codes.
+      operationId: getFiscalMetrics
+      tags:
+        - Economics
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: indicator_id
+          in: query
+          description: Specific indicator code (e.g., IDN_DEBT_GDP).
+          schema:
+            type: string
+        - name: year
+          in: query
+          description: Fiscal year filter.
+          schema:
+            type: integer
+            example: 2025
+        - name: region_code
+          in: query
+          description: ISO 3166 code or BPS region code (e.g., ID, ID-JK).
+          schema:
+            type: string
+            default: ID
+      responses:
+        '200':
+          description: Successful data retrieval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalResponse'
+        '401':
+          description: Unauthorized - Invalid or missing API key
+        '404':
+          description: Data not found for the specified parameters
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    FiscalResponse:
+      type: object
+      properties:
+        meta:
+          $ref: '#/components/schemas/Metadata'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricItem'
+
+    Metadata:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-01-09T12:35:00Z"
+        request_id:
+          type: string
+          format: uuid
+          example: "req_88a9c-22b1-4f90"
+
+    MetricItem:
+      type: object
+      properties:
+        indicator_id:
+          type: string
+          example: "IDN_DEBT_GDP_EST"
+        indicator_name:
+          type: string
+          example: "Debt to GDP Ratio"
+        value:
+          type: number
+          example: 40.51
+        unit:
+          type: string
+          enum: [percent, IDR_trillion, USD_billion, ratio]
+          example: "percent"
+        period:
+          type: string
+          example: "2025-FY"
+        region:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "ID"
+            name:
+              type: string
+              example: "Indonesia"
+            level:
+              type: string
+              enum: [national, provincial, regency]
+        source:
+          type: object
+          properties:
+            organization:
+              type: string
+              example: "Ministry of Finance"
+            published_date:
+              type: string
+              format: date
+              example: "2025-01-01"
+            validation_status:
+              type: string
+              enum: [verified, provisional, estimate]
